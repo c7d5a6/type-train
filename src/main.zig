@@ -26,19 +26,24 @@ pub fn main() anyerror!void {
             const curtime = std.time.nanoTimestamp();
             const delta = curtime - prevTime;
             prevTime = curtime;
-            if (rl.isKeyDown(.enter)) {
-                if (time != 0) {
-                    const hours = @divFloor(time, 3_600_000_000_000);
-                    const minutes = @divFloor(@mod(time, 3_600_000_000_000), 60_000_000_000);
-                    const seconds = @divFloor(@mod(time, 60_000_000_000), 1_000_000_000);
-                    const milliseconds = @divFloor(@mod(time, 1_000_000_000), 1_000_000);
-                    const microseconds = @divFloor(@mod(time, 1_000_000), 1_000);
-                    const nanoseconds = @mod(time, 1_000);
-                    std.debug.print("{d}:{d}:{}.{}.{}.{}\n", .{ hours, minutes, seconds, milliseconds, microseconds, nanoseconds });
-                }
-                keyTime = 0;
-            } else {
-                keyTime = time + delta;
+            // if (time != 0) {
+            // const hours = @divFloor(time, 3_600_000_000_000);
+            // const minutes = @divFloor(@mod(time, 3_600_000_000_000), 60_000_000_000);
+            // const seconds = @divFloor(@mod(time, 60_000_000_000), 1_000_000_000);
+            // const milliseconds = @divFloor(@mod(time, 1_000_000_000), 1_000_000);
+            // const microseconds = @divFloor(@mod(time, 1_000_000), 1_000);
+            // const nanoseconds = @mod(time, 1_000);
+            // std.debug.print("{d}:{d}:{}.{}.{}.{}\n", .{ hours, minutes, seconds, milliseconds, microseconds, nanoseconds });
+            //     // }
+            //     keyTime = 0;
+            // } else {
+            keyTime = time + delta;
+            // }
+            const ch = rl.getCharPressed();
+            if (ch != 0) {
+                var s: [4]u8 = undefined;
+                std.mem.writePackedInt(i32, s[0..], 0, ch, .little);
+                std.debug.print("Pressed {s} in time {d}\n", .{ s, time });
             }
         } else {
             keyTime = 0;
