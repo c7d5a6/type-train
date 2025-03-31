@@ -111,7 +111,10 @@ pub fn main() anyerror!void {
     rl.initWindow(screenWidth, screenHeight, "TypeTrain");
     defer rl.closeWindow(); // Close window and OpenGL context
 
-    const font = rl.loadFontEx("./resources/RobotoMono-Regular.ttf", font_size, null) catch unreachable;
+    // const font = raylib.LoadFontEx("resources/NotoSans-Regular.ttf", 32, &cyrillicRange, cyrillicRange.len
+    var chars: [constants.chars.len]i32 = undefined;
+    @memcpy(chars[0..], constants.chars[0..]);
+    const font = rl.loadFontEx("./resources/RobotoMono-Regular.ttf", font_size, chars[0..]) catch unreachable;
     rl.setTextureFilter(font.texture, .trilinear);
 
     rl.setTargetFPS(0); // Set our game to run at 60 frames-per-second
@@ -134,6 +137,7 @@ pub fn main() anyerror!void {
         rl.clearBackground(constants.background_color);
 
         drawText(font, state);
+        rl.drawTextEx(font, "Привет новое окно", .{ .x = 80, .y = 80 }, font_size, 1, constants.text_color);
         rl.drawFPS(0, 0);
 
         //----------------------------------------------------------------------------------
