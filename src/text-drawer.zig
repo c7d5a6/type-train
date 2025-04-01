@@ -27,7 +27,7 @@ pub const TextDrawer = struct {
         var chars: [cnst.chars.len]i32 = undefined;
         @memcpy(chars[0..], cnst.chars[0..]);
         const font = rl.loadFontEx(font_path, font_size, chars[0..]) catch unreachable;
-        rl.setTextureFilter(font.texture, .trilinear);
+        // rl.setTextureFilter(font.texture, .trilinear);
         const ch_size = rl.measureTextEx(font, "a", font_size, 1);
         return .{
             .state = state,
@@ -38,6 +38,8 @@ pub const TextDrawer = struct {
 
     pub fn drawText(self: This) void {
         const text_width = @min(rl.getRenderWidth() - text_margin * 2, 900);
+        std.debug.print("render width {d}\n", .{rl.getRenderWidth()});
+        std.debug.print("text width {d}\n", .{text_width});
         const max_width: f32 = @as(f32, @floatFromInt(text_width)) / self.ch_size.x - 8;
         const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
 

@@ -54,7 +54,12 @@ pub fn main() anyerror!void {
     defer text.deinit();
     // Initialization
     //--------------------------------------------------------------------------------------
-    rl.setConfigFlags(rl.ConfigFlags{ .vsync_hint = true, .window_resizable = true, .msaa_4x_hint = true });
+    rl.setConfigFlags(rl.ConfigFlags{
+        .vsync_hint = true,
+        .window_resizable = true,
+        .msaa_4x_hint = false,
+        .window_highdpi = true,
+    });
 
     rl.initWindow(srn_width, srn_height, "TypeTrain");
     defer rl.closeWindow(); // Close window and OpenGL context
