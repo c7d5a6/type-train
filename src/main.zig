@@ -28,7 +28,7 @@ fn processPressed(pt: i128, state: *State) i128 {
     while (ch != 0) {
         var s: [4]u8 = undefined;
         _ = unicode.utf8Encode(@intCast(ch), &s) catch unreachable;
-        state.typed.append(@intCast(ch)) catch unreachable;
+        state.typeCh(@intCast(ch));
         const newTime = std.time.nanoTimestamp();
         const lbl = std.fmt.allocPrint(aa.allocator(), "Pressed {s} in loop {d}", .{ s, k }) catch unreachable;
         printTime(lbl, newTime - prevTime);
@@ -37,7 +37,7 @@ fn processPressed(pt: i128, state: *State) i128 {
         k += 1;
     }
     if (rl.isKeyPressed(.backspace)) {
-        _ = state.typed.swapRemove(state.typed.items.len - 1);
+        state.removeCh();
     }
     return prevTime;
 }

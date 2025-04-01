@@ -2,16 +2,11 @@ const std = @import("std");
 const rl = @import("raylib");
 const State = @import("state.zig").State;
 const cnst = @import("constants.zig");
+const CharState = @import("common_enums.zig").CharState;
+const charState = @import("common_enums.zig").charState;
 
 var ch_buff_arr: [17]u8 = undefined;
 var ch_buffer = std.heap.FixedBufferAllocator.init(&ch_buff_arr);
-
-const CharState = enum {
-    correct,
-    not_typed,
-    wrong,
-    wrong_over,
-};
 
 pub const TextDrawer = struct {
     const This: type = @This();
@@ -52,14 +47,7 @@ pub const TextDrawer = struct {
         var drawn = false;
         var prev_ch: u21 = 0;
         while (exercise.len > ie or typed.len > it) {
-            const ch_state: CharState = st: {
-                if (exercise.len <= ie) break :st .wrong_over;
-                if (typed.len <= it) break :st .not_typed;
-                if (exercise[ie] == typed[it]) break :st .correct;
-                if (exercise[ie] == ' ') break :st .wrong_over;
-                if (typed[it] == ' ') break :st .not_typed;
-                break :st .wrong;
-            };
+            const ch_state: CharState = charState(&exercise, typed, ie, it);
             const ch = switch (ch_state) {
                 .not_typed, .wrong, .correct => exercise[ie],
                 .wrong_over => typed[it],
