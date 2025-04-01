@@ -38,8 +38,6 @@ pub const TextDrawer = struct {
 
     pub fn drawText(self: This) void {
         const text_width = @min(rl.getRenderWidth() - text_margin * 2, 900);
-        std.debug.print("render width {d}\n", .{rl.getRenderWidth()});
-        std.debug.print("text width {d}\n", .{text_width});
         const max_width: f32 = @as(f32, @floatFromInt(text_width)) / self.ch_size.x - 8;
         const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
 
@@ -52,7 +50,7 @@ pub const TextDrawer = struct {
         var ie: u8 = 0;
         var it: u8 = 0;
         var drawn = false;
-        var prev_ch: u8 = 0;
+        var prev_ch: u21 = 0;
         while (exercise.len > ie or typed.len > it) {
             const ch_state: CharState = st: {
                 if (exercise.len <= ie) break :st .wrong_over;
@@ -89,7 +87,7 @@ pub const TextDrawer = struct {
         }
     }
 
-    fn drawChar(self: This, start: rl.Vector2, line: f32, symbol: f32, ch: u8, ch_state: CharState, draw_rect: bool) void {
+    fn drawChar(self: This, start: rl.Vector2, line: f32, symbol: f32, ch: u21, ch_state: CharState, draw_rect: bool) void {
         const color = switch (ch_state) {
             .correct => cnst.text_color,
             .wrong => cnst.danger_color,
@@ -98,9 +96,11 @@ pub const TextDrawer = struct {
         };
         const font = self.font;
         const point = start.add(self.ch_size.multiply(.{ .x = symbol, .y = line }));
-        const text = [_]u8{ch};
+        // const text = [_]u8{ch};
+        var text: [4]u8 = undefined;
+        const n = std.unicode.utf8Encode(@intCast(ch), &text) catch unreachable;
         ch_buffer.reset();
-        const t = std.mem.Allocator.dupeZ(ch_buffer.allocator(), u8, text[0..]) catch unreachable;
+        const t = std.mem.Allocator.dupeZ(ch_buffer.allocator(), u8, text[0..n]) catch unreachable;
         if (draw_rect) {
             rl.drawRectangleLinesEx(.{
                 .x = point.x,

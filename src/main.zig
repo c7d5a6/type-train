@@ -27,8 +27,8 @@ fn processPressed(pt: i128, state: *State) i128 {
     var k: u8 = 1;
     while (ch != 0) {
         var s: [4]u8 = undefined;
-        const n = unicode.utf8Encode(@intCast(ch), &s) catch unreachable;
-        state.typed.appendSlice(s[0..n]) catch unreachable;
+        _ = unicode.utf8Encode(@intCast(ch), &s) catch unreachable;
+        state.typed.append(@intCast(ch)) catch unreachable;
         const newTime = std.time.nanoTimestamp();
         const lbl = std.fmt.allocPrint(aa.allocator(), "Pressed {s} in loop {d}", .{ s, k }) catch unreachable;
         printTime(lbl, newTime - prevTime);
@@ -58,7 +58,7 @@ pub fn main() anyerror!void {
         .vsync_hint = true,
         .window_resizable = true,
         .msaa_4x_hint = false,
-        .window_highdpi = true,
+        // .window_highdpi = true,
     });
 
     rl.initWindow(srn_width, srn_height, "TypeTrain");
