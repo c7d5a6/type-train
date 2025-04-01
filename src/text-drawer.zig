@@ -3,6 +3,9 @@ const rl = @import("raylib");
 const State = @import("state.zig").State;
 const cnst = @import("constants.zig");
 
+var ch_buff_arr: [17]u8 = undefined;
+var ch_buffer = std.heap.FixedBufferAllocator.init(&ch_buff_arr);
+
 const CharState = enum {
     correct,
     not_typed,
@@ -34,8 +37,8 @@ pub const TextDrawer = struct {
     }
 
     pub fn drawText(self: This) void {
-        const text_width = @min(rl.getRenderWidth() - text_margin * 2, 800);
-        const max_width: f32 = @as(f32, @floatFromInt(text_width)) / self.ch_size.x - 5;
+        const text_width = @min(rl.getRenderWidth() - text_margin * 2, 900);
+        const max_width: f32 = @as(f32, @floatFromInt(text_width)) / self.ch_size.x - 8;
         const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
 
         const state = self.state;
@@ -61,10 +64,12 @@ pub const TextDrawer = struct {
                 .not_typed, .wrong, .correct => exercise[ie],
                 .wrong_over => typed[it],
             };
+
             if (symbol >= max_width and prev_ch == ' ') {
                 symbol = 0;
                 line += 1;
             }
+
             self.drawChar(start, line, symbol, ch, ch_state, (it == typed.len and !drawn));
             drawn = it == typed.len;
 
@@ -76,6 +81,7 @@ pub const TextDrawer = struct {
                 },
                 .wrong_over => it += 1,
             }
+
             symbol += 1;
             prev_ch = ch;
         }
@@ -90,12 +96,9 @@ pub const TextDrawer = struct {
         };
         const font = self.font;
         const point = start.add(self.ch_size.multiply(.{ .x = symbol, .y = line }));
-        var da = std.heap.DebugAllocator(.{}){};
-        var aaa = std.heap.ArenaAllocator.init(da.allocator());
-        defer aaa.deinit();
-        const all = aaa.allocator();
         const text = [_]u8{ch};
-        const t = std.mem.Allocator.dupeZ(all, u8, text[0..]) catch unreachable;
+        ch_buffer.reset();
+        const t = std.mem.Allocator.dupeZ(ch_buffer.allocator(), u8, text[0..]) catch unreachable;
         if (draw_rect) {
             rl.drawRectangleLinesEx(.{
                 .x = point.x,

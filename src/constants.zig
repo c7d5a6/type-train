@@ -1,6 +1,8 @@
 const rl = @import("raylib");
 const std = @import("std");
 
+pub const max_characters_test = 25 * 100 * 4 + 4;
+
 pub const text_color = hexToColor(0xF3F2EBFF); // F3F2EB
 pub const grey_color = hexToColor(0x6C6E74FF); // 8C8E94
 pub const accent_color = hexToColor(0xD4A344FF); // D4A344

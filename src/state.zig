@@ -1,17 +1,14 @@
 const std = @import("std");
+const cnst = @import("constants.zig");
 
-var wrd_buff_arr: [1000]u8 = undefined;
-var wrd_buffer = std.heap.FixedBufferAllocator.init(&wrd_buff_arr);
+var typed_buff_arr: [cnst.max_characters_test]u8 = undefined;
+var typed_buff = std.heap.FixedBufferAllocator.init(&typed_buff_arr);
 const lorem = "lorem ipsum dolor sit amet consectetur adipiscing elit pellentesque rutrum tristique tellus luctus cursus cras sagittis magna mi vel ultricies felis rutrum ac donec nisl";
-var da = std.heap.DebugAllocator(.{}){};
-var aaa = std.heap.ArenaAllocator.init(da.allocator());
 
 pub const State = struct {
     exercise: []const u8 = lorem[0..],
     typed: std.ArrayList(u8),
     pub fn init() State {
-        // defer aaa.deinit();
-        const all = aaa.allocator();
-        return .{ .typed = std.ArrayList(u8).init(all) };
+        return .{ .typed = std.ArrayList(u8).initCapacity(typed_buff.allocator(), typed_buff_arr.len) catch unreachable };
     }
 };
