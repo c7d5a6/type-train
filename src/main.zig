@@ -2,6 +2,7 @@ const rl = @import("raylib");
 const constants = @import("constants.zig");
 const State = @import("state.zig").State;
 const std = @import("std");
+const TextDrawer = @import("text-drawer.zig").TextDrawer;
 const unicode = std.unicode;
 
 const font_size = 40;
@@ -35,89 +36,32 @@ fn processPressed(pt: i128, state: *State) i128 {
         ch = rl.getCharPressed();
         k += 1;
     }
+    if (rl.isKeyPressed(.backspace)) {
+        _ = state.typed.swapRemove(state.typed.items.len - 1);
+    }
     return prevTime;
 }
-const text_margin = 100;
-fn drawText(font: rl.Font, state: State) void {
-    const b_size = rl.measureTextEx(font, "a bc", font_size, 1).divide(.{ .x = 4, .y = 1 });
-    const text_width = @min(rl.getRenderWidth() - text_margin * 2, 800);
-    const max_width: i32 = @intFromFloat(@as(f32, @floatFromInt(text_width)) / b_size.x);
-    const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
-    const ex_text = state.exercise;
-    var line: f32 = 1;
-    var i: u8 = 0;
-    var j: u8 = 0;
-    var t_idx: u8 = 0;
-    while (ex_text.len > j) {
-        if (ex_text[j] == ' ') {
-            const width = j - i;
-            if (width >= max_width) {
-                while (j < ex_text.len and ex_text[j] == ' ') j += 1;
-                t_idx = drawLine(font, start.add(.{ .x = 0, .y = line * b_size.y }), ex_text[i..j], state, t_idx);
-                i = j;
-                line += 1;
-            }
-        }
-        j += 1;
-    }
-    if (i < ex_text.len) {
-        _ = drawLine(font, start.add(.{ .x = 0, .y = line * b_size.y }), ex_text[i..j], state, t_idx);
-    }
-}
-
-fn drawLine(font: rl.Font, line_start: rl.Vector2, text: []const u8, state: State, t_idx: u8) u8 {
-    const typed = state.typed.items;
-    var i: u8 = 0;
-    var ti: u8 = t_idx;
-    var point = rl.measureTextEx(font, "", font_size, 1);
-    while (i < text.len) {
-        var j: u8 = 0;
-        while (typed.len > ti + j and text[i + j] == typed[ti + j]) {
-            j += 1;
-        }
-        if (j > 0) {
-            const t = std.mem.Allocator.dupeZ(std.heap.c_allocator, u8, text[i .. i + j]) catch unreachable;
-            rl.drawTextEx(font, t, line_start.add(.{ .x = point.x, .y = 0 }), font_size, 1, constants.text_color);
-            point = point.add(rl.measureTextEx(font, t, font_size, 1));
-            ti += j;
-            i += j;
-        } else if (ti >= typed.len) {
-            const t = std.mem.Allocator.dupeZ(std.heap.c_allocator, u8, text[i..text.len]) catch unreachable;
-            rl.drawTextEx(font, t, line_start.add(.{ .x = point.x, .y = 0 }), font_size, 1, constants.grey_color);
-            point = point.add(rl.measureTextEx(font, t, font_size, 1));
-            return ti;
-        } else {
-            const t = std.mem.Allocator.dupeZ(std.heap.c_allocator, u8, typed[ti .. ti + 1]) catch unreachable;
-            rl.drawTextEx(font, t, line_start.add(.{ .x = point.x, .y = 0 }), font_size, 1, constants.danger_color);
-            point = point.add(rl.measureTextEx(font, t, font_size, 1));
-            i += 1;
-            ti += 1;
-        }
-    }
-    return ti;
-}
+const srn_width = 800;
+const srn_height = 450;
 
 pub fn main() anyerror!void {
     var state = State.init();
-
-    var text = std.ArrayList(u8).init(std.heap.c_allocator);
+    var da = std.heap.DebugAllocator(.{}){};
+    var aaa = std.heap.ArenaAllocator.init(da.allocator());
+    defer aaa.deinit();
+    const all = aaa.allocator();
+    var text = std.ArrayList(u8).init(all);
     defer text.deinit();
     // Initialization
     //--------------------------------------------------------------------------------------
-    const screenWidth = 800;
-    const screenHeight = 450;
     rl.setConfigFlags(rl.ConfigFlags{ .vsync_hint = true, .window_resizable = true, .msaa_4x_hint = true });
 
-    rl.initWindow(screenWidth, screenHeight, "TypeTrain");
+    rl.initWindow(srn_width, srn_height, "TypeTrain");
     defer rl.closeWindow(); // Close window and OpenGL context
 
-    // const font = raylib.LoadFontEx("resources/NotoSans-Regular.ttf", 32, &cyrillicRange, cyrillicRange.len
-    var chars: [constants.chars.len]i32 = undefined;
-    @memcpy(chars[0..], constants.chars[0..]);
-    const font = rl.loadFontEx("./resources/RobotoMono-Regular.ttf", font_size, chars[0..]) catch unreachable;
-    rl.setTextureFilter(font.texture, .trilinear);
-
     rl.setTargetFPS(0); // Set our game to run at 60 frames-per-second
+    //
+    const text_drawer = TextDrawer.init(&state);
     //--------------------------------------------------------------------------------------
     var prevTime = std.time.nanoTimestamp();
 
@@ -136,8 +80,9 @@ pub fn main() anyerror!void {
 
         rl.clearBackground(constants.background_color);
 
-        drawText(font, state);
-        rl.drawTextEx(font, "Привет новое окно", .{ .x = 80, .y = 80 }, font_size, 1, constants.text_color);
+        text_drawer.drawText();
+
+        // rl.drawTextEx(font, "Привет новое окно", .{ .x = 80, .y = 80 }, font_size, 1, constants.text_color);
         rl.drawFPS(0, 0);
 
         //----------------------------------------------------------------------------------
