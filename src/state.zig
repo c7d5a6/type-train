@@ -11,8 +11,8 @@ const lorem = "lorem ipsum dolor sit amet consectetur adipiscing elit pellentesq
 pub const State = struct {
     exercise: [lorem.len]u21,
     typed: std.ArrayList(u21),
-    ex_id: u8 = 0,
-    input_state: CharState = .not_typed,
+    ex_id: ?u8 = null,
+    key_time: ?i128 = null,
 
     pub fn init() State {
         var exersise: [lorem.len]u21 = undefined;
@@ -29,53 +29,6 @@ pub const State = struct {
 
     pub fn resetTyped(self: *State) void {
         self.typed.clearRetainingCapacity();
-        self.ex_id = 0;
-        self.input_state = .not_typed;
-    }
-
-    pub fn typeCh(self: *State, ch: u21) void {
-        self.typed.append(ch) catch unreachable;
-        const ti: u8 = @intCast(self.typed.items.len);
-
-        const ch_state: CharState = charState(
-            &self.exercise,
-            self.typed.items,
-            self.ex_id,
-            ti - 1,
-        );
-        switch (ch_state) {
-            .not_typed, .correct, .wrong => {
-                self.ex_id += 1;
-            },
-            else => {},
-        }
-
-        self.input_state = ch_state;
-
-        std.debug.print(
-            "{} with\n\t ex#[{d}]\n\t tp#[{d}]\n",
-            .{ self.input_state, self.ex_id, ti },
-        );
-    }
-
-    pub fn removeCh(self: *State) void {
-        _ = self.typed.swapRemove(self.typed.items.len - 1);
-        const ti: u8 = @intCast(self.typed.items.len);
-        switch (self.input_state) {
-            .not_typed, .correct, .wrong => {
-                self.ex_id -= 1;
-            },
-            else => {},
-        }
-        self.input_state = charState(
-            &self.exercise,
-            self.typed.items,
-            self.ex_id,
-            ti,
-        );
-        std.debug.print(
-            "{} with\n\t ex#[{d}]\n\t tp#[{d}] of {d}\n",
-            .{ self.input_state, self.ex_id, ti, ti },
-        );
+        self.ex_id = null;
     }
 };
