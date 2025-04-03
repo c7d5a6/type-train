@@ -8,6 +8,23 @@ const key_updater = @import("key_press_updater.zig");
 const srn_width = 800;
 const srn_height = 450;
 
+fn drawFinalStats(state: State) void {
+    var start = rl.Vector2{ .x = 100, .y = 100 };
+    std.debug.print("symbol stats lengs {}\n", .{state.symbol_stats.items.len});
+    for (state.symbol_stats.items) |st| {
+        const st_text = std.fmt.allocPrintZ(std.heap.c_allocator, "{s}: cpm {?} with {d} errors", .{
+            st.smb,
+            if (st.sum_time) |time|
+                @divFloor(60 * 1000 * 1000 * 1000 * @as(i128, st.n_time), time)
+            else
+                null,
+            st.n_error,
+        }) catch unreachable;
+        rl.drawText(st_text, @intFromFloat(start.x), @intFromFloat(start.y), 32, rl.Color.yellow);
+        start = start.add(.{ .x = 0, .y = 33 });
+    }
+}
+
 pub fn main() anyerror!void {
     var state = State.init();
     // Initialization
@@ -42,7 +59,11 @@ pub fn main() anyerror!void {
 
         rl.clearBackground(constants.background_color);
 
-        text_drawer.drawText();
+        switch (state.state) {
+            .exercise => text_drawer.drawText(),
+            .exercise_finalyze => drawFinalStats(state),
+            else => {},
+        }
 
         // rl.drawTextEx(font, "Привет новое окно", .{ .x = 80, .y = 80 }, font_size, 1, constants.text_color);
         rl.drawFPS(0, 0);

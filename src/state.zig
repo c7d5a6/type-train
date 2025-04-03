@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 const cnst = @import("constants.zig");
 const TypedState = @import("common_enums.zig").TypedState;
 const unicode = std.unicode;
@@ -8,14 +9,36 @@ var typed_buff = std.heap.FixedBufferAllocator.init(&typed_buff_arr);
 const lorem = "lorem ipsum dolor sit amet consectetur adipiscing elit pellentesque rutrum tristique tellus luctus cursus cras sagittis magna mi vel ultricies felis rutrum ac donec nisl";
 
 var typed_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+var symbol_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+
+const StateType = enum {
+    exercise,
+    exercise_finalyze,
+    exercise_stats,
+};
+const TypedSymbol = struct {
+    smb: [:0]u8,
+    time: ?i128,
+    err: bool,
+};
+
+const SymbolStat = struct {
+    smb: [:0]u8,
+    sum_time: ?i128,
+    n_time: u32,
+    n_error: u32,
+    n: u32,
+};
 
 pub const State = struct {
+    state: StateType = .exercise,
     exercise: [lorem.len]u21,
     typed: std.ArrayList(u21),
     ex_id: ?u8 = null,
     key_time: ?i128 = null,
     prev_key_time: ?i128 = null,
     typed_symbols: std.ArrayList(TypedSymbol),
+    symbol_stats: std.ArrayList(SymbolStat),
 
     pub fn init() State {
         var exersise: [lorem.len]u21 = undefined;
@@ -28,17 +51,21 @@ pub const State = struct {
             .exercise = exersise,
             .typed = std.ArrayList(u21).initCapacity(typed_buff.allocator(), cnst.max_characters_test) catch unreachable,
             .typed_symbols = std.ArrayList(TypedSymbol).init(typed_arena.allocator()),
+            .symbol_stats = std.ArrayList(SymbolStat).init(symbol_arena.allocator()),
         };
     }
 
     pub fn resetTyped(self: *State) void {
-        self.typed.clearRetainingCapacity();
+        // TODO: assert state state
+        _ = self.typed.clearRetainingCapacity();
         self.ex_id = null;
-        typed_arena.reset(.retain_capacity);
+        _ = typed_arena.reset(.retain_capacity);
         self.typed_symbols = std.ArrayList(TypedSymbol).init(typed_arena.allocator());
     }
 
     pub fn addTyped(self: *State, ts: TypedState, key_time: ?i128) void {
+        assert(self.state == .exercise);
+
         if (ts == .wrong_over or ts == .whitespace) {
             return;
         }
@@ -83,6 +110,7 @@ pub const State = struct {
     }
 
     fn addTypedSymbols(self: *State, symbols: []const u21, time: ?i128, is_error: bool) void {
+        assert(self.state == .exercise);
         const a = typed_arena.allocator();
         var str = std.ArrayList(u8).initCapacity(a, 4 * 3) catch unreachable;
         var buff: [4]u8 = undefined;
@@ -97,12 +125,47 @@ pub const State = struct {
             .time = time,
             .err = is_error,
         }) catch unreachable;
-        std.debug.print("current smbls {any}", .{self.typed_symbols.items});
+    }
+
+    pub fn finalyzeStats(self: *State) void {
+        assert(self.state == .exercise_finalyze);
+        _ = symbol_arena.reset(.retain_capacity);
+        self.symbol_stats = std.ArrayList(SymbolStat).initCapacity(
+            symbol_arena.allocator(),
+            self.typed_symbols.items.len,
+        ) catch unreachable;
+
+        std.debug.print("typed symbols stats lengs {}\n", .{self.typed_symbols.items.len});
+        next: for (self.typed_symbols.items) |ts| {
+            for (self.symbol_stats.items, 0..) |s, i| {
+                if (std.mem.eql(u8, ts.smb, s.smb)) {
+                    fillSymbolStat(&self.symbol_stats.items[i], ts);
+                    continue :next;
+                }
+            }
+            var smb = symbol_arena.allocator().allocSentinel(u8, ts.smb.len, 0) catch unreachable;
+            @memcpy(smb[0..], ts.smb);
+
+            var s = SymbolStat{
+                .smb = smb,
+                .n = 0,
+                .n_time = 0,
+                .n_error = 0,
+                .sum_time = null,
+            };
+            fillSymbolStat(&s, ts);
+            self.symbol_stats.append(s) catch unreachable;
+            std.debug.print("ts symbol {s}  stats lengs {}\n", .{ ts.smb, self.symbol_stats.items.len });
+        }
     }
 };
 
-const TypedSymbol = struct {
-    smb: [:0]u8,
-    time: ?i128,
-    err: bool,
-};
+fn fillSymbolStat(stat: *SymbolStat, ts: TypedSymbol) void {
+    stat.n += 1;
+    if (ts.time) |time| {
+        stat.sum_time = (stat.sum_time orelse 0) + time;
+        stat.n_time += 1;
+    }
+    if (ts.err)
+        stat.n_error += 1;
+}

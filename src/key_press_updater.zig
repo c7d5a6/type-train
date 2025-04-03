@@ -27,6 +27,23 @@ pub fn processPressed(state: *State) void {
         removeCh(state);
         new_time = null;
     }
+
+    if (rl.isKeyPressed(.enter)) {
+        switch (state.state) {
+            .exercise => {
+                state.state = .exercise_finalyze;
+                state.finalyzeStats();
+            },
+            .exercise_finalyze => {
+                state.state = .exercise;
+                state.resetTyped();
+            },
+            else => {
+                state.state = .exercise;
+                state.resetTyped();
+            },
+        }
+    }
     state.key_time = if (new_time) |nt| if (prev_key_time) |st| nt - st else state.key_time else state.key_time;
 }
 
