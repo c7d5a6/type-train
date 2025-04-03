@@ -1,85 +1,88 @@
 const std = @import("std");
 const rl = @import("raylib");
 const State = @import("state.zig").State;
+const TypedState = @import("common_enums.zig").TypedState;
 const unicode = std.unicode;
 
-fn printTime(name: []const u8, time: i128) void {
-    const seconds = @divFloor(time, 1_000_000_000);
-    const milliseconds = @divFloor(@mod(time, 1_000_000_000), 1_000_000);
-    const microseconds = @divFloor(@mod(time, 1_000_000), 1_000);
-    const nanoseconds = @mod(time, 1_000);
-    std.debug.print("{s} time: {}s {}.{}.{}\n", .{ name, seconds, milliseconds, microseconds, nanoseconds });
-}
-
 pub fn processPressed(state: *State) void {
-    var new_time: ?i128 = std.time.nanoTimestamp();
-    // const prev_time = state.key_time;
     var k: u8 = 0;
     var ch: i32 = rl.getCharPressed();
-    while (ch != 0) {
-        const ts = typeCh(state, @intCast(ch));
-        std.debug.print("eixaf {any}\n", .{state.ex_id});
-        std.debug.print("Ts {any}\n", .{ts});
+    var new_time: ?i128 = if (ch == 0) null else std.time.nanoTimestamp();
+    const prev_key_time = state.prev_key_time;
 
-        if (k == 0) {}
+    while (ch != 0) {
+        if (k != 0) {
+            new_time = null;
+        }
+        const key_time = if (new_time == null or prev_key_time == null) null else new_time.? - prev_key_time.?;
+        const ts = typeCh(state, @intCast(ch));
+        state.addTyped(ts, key_time);
 
         ch = rl.getCharPressed();
+        state.prev_key_time = new_time;
         k += 1;
     }
+
     if (rl.isKeyPressed(.backspace)) {
         removeCh(state);
         new_time = null;
     }
-    state.key_time = new_time;
+    state.key_time = if (new_time) |nt| if (prev_key_time) |st| nt - st else state.key_time else state.key_time;
 }
-
-const TypedStateType = enum {
-    correct,
-    wrong,
-    wrong_over,
-    whitespace,
-};
-const TypedState = union(TypedStateType) {
-    correct: u21,
-    wrong: u21,
-    wrong_over: void,
-    whitespace: void,
-};
 
 fn typeCh(state: *State, ch: u21) TypedState {
     state.typed.append(ch) catch unreachable;
-    std.debug.print("eix {any}\n", .{state.ex_id});
-    if (state.ex_id) |i| {
-        if (i >= state.exercise.len) {
-            return .wrong_over;
-        }
+
+    const eid: i16 = state.ex_id orelse -1;
+    if (eid + 1 >= state.exercise.len) {
+        return .wrong_over;
     }
-    if (ch == ' ') {
-        state.ex_id = state.ex_id orelse 0;
-        while (state.ex_id.? < state.exercise.len and state.exercise[state.ex_id.?] != ' ')
-            state.ex_id.? += 1;
+
+    const en = state.exercise[@intCast(eid + 1)];
+
+    if (ch == ' ' and en != ' ') {
+        var i: u8 = @intCast(eid + 1);
+        while (i < state.exercise.len and state.exercise[i] != ' ') {
+            i += 1;
+        }
+        state.ex_id = i;
+        return .wrong_over;
+    }
+
+    if (ch != ' ' and en == ' ') {
+        return .wrong_over;
+    }
+    state.ex_id = @intCast(eid + 1);
+    if (en != ch) {
+        return .{ .wrong = @intCast(eid + 1) };
+    }
+    if (en == ' ' and ch == ' ') {
         return .whitespace;
-    } else {
-        if (state.ex_id) |i| {
-            if (state.exercise[i] == ' ') {
-                return .wrong_over;
-            }
-        }
     }
-    state.ex_id = (state.ex_id orelse 0) + 1;
-    if (state.ex_id.? >= state.exercise.len) {
-        return .wrong_over;
-    }
-    const ech = state.exercise[state.ex_id.?];
-    if (ech == ' ') {
-        return .wrong_over;
-    }
-    if (ech != ch) {
-        return .{ .wrong = ech };
-    }
-    return .{ .correct = ech };
+    return .{ .correct = @intCast(eid + 1) };
 }
 
 fn removeCh(state: *State) void {
+    if (state.typed.items.len == 0) return;
     _ = state.typed.swapRemove(state.typed.items.len - 1);
+
+    var ie: u8 = 0;
+    var it: u8 = 0;
+    while (it < state.typed.items.len) {
+        if (state.exercise.len <= ie or
+            (state.exercise[ie] == ' ' and
+                state.typed.items[it] != ' '))
+        {
+            it += 1;
+        } else if (state.typed.items.len <= it or
+            (state.typed.items[it] == ' ' and
+                state.exercise[ie] != ' '))
+        {
+            ie += 1;
+        } else {
+            ie += 1;
+            it += 1;
+        }
+    }
+    state.ex_id = if (ie == 0) null else ie - 1;
 }

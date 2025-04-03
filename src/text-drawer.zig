@@ -31,6 +31,11 @@ pub const TextDrawer = struct {
     }
 
     pub fn drawText(self: This) void {
+        if (self.state.key_time) |kt| {
+            const time = std.fmt.allocPrintZ(std.heap.c_allocator, "cpm: {d}", .{@divFloor(60 * 1000 * 1000 * 1000, kt)}) catch unreachable;
+            rl.drawTextEx(self.font, time, .{ .x = 100, .y = 100 }, font_size, 1, cnst.accent_color);
+        }
+        //
         const text_width = @min(rl.getRenderWidth() - text_margin * 2, 900);
         const max_width: f32 = @as(f32, @floatFromInt(text_width)) / self.ch_size.x - 8;
         const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
