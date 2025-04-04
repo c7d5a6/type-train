@@ -4,6 +4,7 @@ const constants = @import("constants.zig");
 const State = @import("state.zig").State;
 const TextDrawer = @import("text-drawer.zig").TextDrawer;
 const key_updater = @import("key_press_updater.zig");
+const fileReader = @import("file-reader.zig");
 
 const srn_width = 800;
 const srn_height = 450;
@@ -26,6 +27,7 @@ fn drawFinalStats(state: State) void {
 }
 
 pub fn main() anyerror!void {
+    fileReader.readEn();
     var state = State.init();
     // Initialization
     //--------------------------------------------------------------------------------------
