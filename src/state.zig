@@ -9,7 +9,8 @@ var typed_buff = std.heap.FixedBufferAllocator.init(&typed_buff_arr);
 const lorem = "lorem ipsum dolor sit amet consectetur adipiscing elit pellentesque rutrum tristique tellus luctus cursus cras sagittis magna mi vel ultricies felis rutrum ac donec nisl";
 
 var typed_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-var symbol_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+var symbol_stats_da = std.heap.DebugAllocator(.{}).init;
+var symbol_stats_allocator = symbol_stats_da.allocator();
 
 const StateType = enum {
     exercise,
@@ -51,7 +52,7 @@ pub const State = struct {
             .exercise = exersise,
             .typed = std.ArrayList(u21).initCapacity(typed_buff.allocator(), cnst.max_characters_test) catch unreachable,
             .typed_symbols = std.ArrayList(TypedSymbol).init(typed_arena.allocator()),
-            .symbol_stats = std.ArrayList(SymbolStat).init(symbol_arena.allocator()),
+            .symbol_stats = std.ArrayList(SymbolStat).init(symbol_stats_allocator),
         };
     }
 
@@ -129,11 +130,11 @@ pub const State = struct {
 
     pub fn finalyzeStats(self: *State) void {
         assert(self.state == .exercise_finalyze);
-        _ = symbol_arena.reset(.retain_capacity);
-        self.symbol_stats = std.ArrayList(SymbolStat).initCapacity(
-            symbol_arena.allocator(),
-            self.typed_symbols.items.len,
-        ) catch unreachable;
+        // _ = symbol_arena.reset(.retain_capacity);
+        // self.symbol_stats = std.ArrayList(SymbolStat).initCapacity(
+        //     symbol_arena.allocator(),
+        //     self.typed_symbols.items.len,
+        // ) catch unreachable;
 
         std.debug.print("typed symbols stats lengs {}\n", .{self.typed_symbols.items.len});
         next: for (self.typed_symbols.items) |ts| {
@@ -143,7 +144,7 @@ pub const State = struct {
                     continue :next;
                 }
             }
-            var smb = symbol_arena.allocator().allocSentinel(u8, ts.smb.len, 0) catch unreachable;
+            var smb = symbol_stats_allocator.allocSentinel(u8, ts.smb.len, 0) catch unreachable;
             @memcpy(smb[0..], ts.smb);
 
             var s = SymbolStat{
@@ -155,7 +156,7 @@ pub const State = struct {
             };
             fillSymbolStat(&s, ts);
             self.symbol_stats.append(s) catch unreachable;
-            std.debug.print("ts symbol {s}  stats lengs {}\n", .{ ts.smb, self.symbol_stats.items.len });
+            std.mem.sort(SymbolStat, self.symbol_stats.items, .{}, smbStLessThan);
         }
     }
 };
@@ -168,4 +169,21 @@ fn fillSymbolStat(stat: *SymbolStat, ts: TypedSymbol) void {
     }
     if (ts.err)
         stat.n_error += 1;
+}
+
+fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
+    _ = v;
+    const e1n2 = lhs.n_error * rhs.n;
+    const e2n1 = rhs.n_error * lhs.n;
+    if (e1n2 == e2n1) {
+        if (lhs.sum_time == null and rhs.sum_time == null) return false;
+        if (lhs.sum_time) |l_time|
+            if (rhs.sum_time) |r_time|
+                return l_time * rhs.n_time > r_time * lhs.n_time
+            else
+                return false
+        else
+            return true;
+    }
+    return e1n2 > e2n1;
 }
