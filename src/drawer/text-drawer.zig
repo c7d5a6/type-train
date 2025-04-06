@@ -1,8 +1,8 @@
 const std = @import("std");
 const rl = @import("raylib");
-const State = @import("state.zig").State;
-const cnst = @import("constants.zig");
-const CharState = @import("common_enums.zig").CharState;
+const State = @import("../state.zig").State;
+const cnst = @import("../constants.zig");
+const CharState = @import("../common_enums.zig").CharState;
 
 var ch_buff_arr: [17]u8 = undefined;
 var ch_buffer = std.heap.FixedBufferAllocator.init(&ch_buff_arr);
@@ -41,7 +41,7 @@ pub const TextDrawer = struct {
         const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
 
         const state = self.state;
-        const exercise = state.exercise;
+        const exercise = state.exercise.items;
         const typed = state.typed.items;
 
         var line: f32 = 0;
