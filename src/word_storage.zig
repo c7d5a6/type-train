@@ -26,7 +26,7 @@ pub fn load() void {
     for (storage.items) |w| std.debug.print("\t*{s}\n", .{w});
 }
 
-pub fn createExcercise(state: *State) void {
+pub fn createAndInitExcercise(state: *State) void {
     defer _ = temp_arena.reset(.free_all);
     var words: std.ArrayList([]u8) = std.ArrayList([]u8).init(temp_arena.allocator());
 
