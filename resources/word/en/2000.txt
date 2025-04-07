@@ -1,8 +1,0 @@
-memory
-populate
-chick
-dear
-enemy
-reply
-drink
-occur

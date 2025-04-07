@@ -3,6 +3,7 @@ const rl = @import("raylib");
 const State = @import("../state.zig").State;
 const cnst = @import("../constants.zig");
 const CharState = @import("../common_enums.zig").CharState;
+const CharStatDrawer = @import("char-stat-drawer.zig").CharStatDrawer;
 
 var ch_buff_arr: [17]u8 = undefined;
 var ch_buffer = std.heap.FixedBufferAllocator.init(&ch_buff_arr);
@@ -16,6 +17,7 @@ pub const TextDrawer = struct {
     state: *State,
     font: rl.Font,
     ch_size: rl.Vector2,
+    char_drawer: CharStatDrawer,
 
     pub fn init(state: *State) TextDrawer {
         var chars: [cnst.chars.len]i32 = undefined;
@@ -27,16 +29,21 @@ pub const TextDrawer = struct {
             .state = state,
             .font = font,
             .ch_size = ch_size,
+            .char_drawer = CharStatDrawer.init(state, text_margin),
         };
     }
 
     pub fn drawText(self: This) void {
-        const time = std.fmt.allocPrintZ(std.heap.c_allocator, "cpm: {d}", .{self.state.cpm}) catch unreachable;
-        rl.drawTextEx(self.font, time, .{ .x = 100, .y = 100 }, font_size, 1, cnst.accent_color);
-        //
+        self.char_drawer.drawText();
+
         const text_width = @min(rl.getRenderWidth() - text_margin * 2, 900);
         const max_width: f32 = @as(f32, @floatFromInt(text_width)) / self.ch_size.x - 8;
         const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
+
+        ch_buffer.reset();
+        const time = std.fmt.allocPrintZ(ch_buffer.allocator(), "cpm: {d}", .{self.state.cpm}) catch unreachable;
+        rl.drawTextEx(self.font, time, .{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 150 }, font_size, 1, cnst.accent_color);
+        //
 
         const state = self.state;
         const exercise = state.exercise.items;

@@ -10,11 +10,11 @@ pub const dark_red_color = hexToColor(0x9D5648FF); // 9D5648
 pub const background_color = hexToColor(0x282828FF); //282828            //
 //Old Gold #d7a343 Primary
 //Thunder #292629 Info
-//Chelsea Cucumber #76ab4c Success
-//Buttercup #f39b14 Warning
+pub const green_color = hexToColor(0x76AB4CFF); //Chelsea Cucumber #76ab4c Success
+pub const red_color = hexToColor(0xF44336FF); //Pomegranate #f44336 Danger
+pub const yellow_color = hexToColor(0xF39B14FF); //Buttercup #f39b14 Warning
 
-//Pomegranate #f44336 Danger
-pub const danger_color = hexToColor(0xF44336FF);
+pub const danger_color = hexToColor(0xF44336FF); //#f44336
 
 pub fn hexToColor(hex: u32) rl.Color {
     const r = ((hex & 0xFF000000) >> 16) >> 8;
@@ -52,7 +52,7 @@ const currency = getChars(0x0024, 0x0024);
 const currency2 = getChars(0x20AC, 0x20AC);
 const currency3 = getChars(0x00A3, 0x00A5);
 const diacritic = getChars(0x0300, 0x036F);
-const char_len = latin_upper.len + latin_lower.len + greek_upper.len + greek_lower.len + cyril_upper.len + cyril_lower.len + numbers.len + space.len + symbols.len + brackets.len + symbols_2.len + currency.len + currency2.len + currency3.len + diacritic.len;
+pub const char_len = latin_upper.len + latin_lower.len + greek_upper.len + greek_lower.len + cyril_upper.len + cyril_lower.len + numbers.len + space.len + symbols.len + brackets.len + symbols_2.len + currency.len + currency2.len + currency3.len + diacritic.len;
 
 pub const chars = chars: {
     const r = lbl: {

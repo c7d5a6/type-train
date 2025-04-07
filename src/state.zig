@@ -2,6 +2,7 @@ const std = @import("std");
 const assert = std.debug.assert;
 const cnst = @import("constants.zig");
 const TypedState = @import("common_enums.zig").TypedState;
+const word_storage = @import("word_storage.zig");
 const unicode = std.unicode;
 
 var exer_buff_arr: [cnst.max_characters_test * 8]u8 = undefined;
@@ -47,29 +48,28 @@ pub const State = struct {
     cpm: u64 = 0,
 
     pub fn init(state: StateType) State {
-        var res = State{
+        return State{
             .state = state,
             .exercise = std.ArrayList(u21).initCapacity(exer_buff.allocator(), cnst.max_characters_test) catch unreachable,
             .typed = std.ArrayList(u21).initCapacity(typed_buff.allocator(), cnst.max_characters_test) catch unreachable,
             .typed_symbols = std.ArrayList(TypedSymbol).init(typed_arena.allocator()),
             .symbol_stats = std.ArrayList(SymbolStat).init(symbol_stats_allocator),
         };
-        var ch = [_]u8{'a'};
-        while (ch[0] <= 'z') {
-            var smb = symbol_stats_allocator.allocSentinel(u8, ch.len, 0) catch unreachable;
-            @memcpy(smb[0..], ch[0..]);
-
-            const s = SymbolStat{
-                .smb = smb,
-                .n = 0,
-                .n_time = 0,
-                .n_error = 0,
-                .sum_time = null,
-            };
-            res.symbol_stats.append(s) catch unreachable;
-            ch[0] += 1;
-        }
-        return res;
+        // for (word_storage.symbols.items) |s| {
+        //     const len = std.unicode.utf8CodepointSequenceLength(s) catch unreachable;
+        //     var smb = symbol_stats_allocator.allocSentinel(u8, len, 0) catch unreachable;
+        //     const n = std.unicode.utf8Encode(s, smb[0..]) catch unreachable;
+        //     std.debug.assert(len == n);
+        //     const ss = SymbolStat{
+        //         .smb = smb,
+        //         .n = 0,
+        //         .n_time = 0,
+        //         .n_error = 0,
+        //         .sum_time = null,
+        //     };
+        //     res.symbol_stats.append(ss) catch unreachable;
+        // }
+        // return res;
     }
 
     pub fn init_exercise(self: *State, words: []const []const u8) void {
@@ -191,19 +191,24 @@ pub const State = struct {
             fillSymbolStat(&s, ts);
             self.symbol_stats.append(s) catch unreachable;
         }
-        std.mem.sort(SymbolStat, self.symbol_stats.items, .{}, smbStLessThan);
+        self.sortStats();
 
         var n: u128 = 0;
         var t: u128 = 0;
         for (self.symbol_stats.items) |s| {
-            if (s.smb.len == 1 and s.n_time > 0) {
+            if (std.unicode.utf8ByteSequenceLength(s.smb[0]) catch unreachable == s.smb.len and s.n_time > 0) {
                 n += s.n_time;
                 t += @intCast(s.sum_time orelse 0);
             }
         }
-        self.cpm = @intCast(@divFloor(60 * 1000 * 1000 * 1000 * n, t));
+        if (t != 0)
+            self.cpm = @intCast(@divFloor(60 * 1000 * 1000 * 1000 * n, t));
 
         self.state = .exercise_init;
+    }
+
+    pub fn sortStats(self: *State) void {
+        std.mem.sort(SymbolStat, self.symbol_stats.items, .{}, smbStLessThan);
     }
 };
 
@@ -221,18 +226,24 @@ fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
     _ = v;
     const e1n2 = lhs.n_error * rhs.n;
     const e2n1 = rhs.n_error * lhs.n;
-    if ((lhs.smb.len == 1 and lhs.n < 3) or
-        (rhs.smb.len == 1 and rhs.n < 3))
+    const l1smb = std.unicode.utf8ByteSequenceLength(lhs.smb[0]) catch unreachable == lhs.smb.len;
+    const r1smb = std.unicode.utf8ByteSequenceLength(lhs.smb[0]) catch unreachable == rhs.smb.len;
+    if ((l1smb and lhs.n < 3) or
+        (r1smb and rhs.n < 3))
     {
         return lhs.n < rhs.n;
     }
     if (e1n2 == e2n1) {
         if (lhs.sum_time == null and rhs.sum_time == null) return false;
         if (lhs.sum_time) |l_time|
-            if (rhs.sum_time) |r_time|
-                return l_time * rhs.n_time > r_time * lhs.n_time
-            else
-                return false
+            if (rhs.sum_time) |r_time| {
+                if (l1smb and r1smb)
+                    std.debug.print(
+                        "Comparing {s} and {s}: l_time {d} rtime {d}\n",
+                        .{ lhs.smb, rhs.smb, l_time * rhs.n_time, r_time * lhs.n_time },
+                    );
+                return l_time * rhs.n_time > r_time * lhs.n_time;
+            } else return false
         else
             return true;
     }

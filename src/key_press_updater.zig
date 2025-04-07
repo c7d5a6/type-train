@@ -37,8 +37,7 @@ pub fn processPressed(state: *State) void {
                 state.state = .stats;
             },
             .stats => {
-                state.state = .exercise_init;
-                state.resetTyped();
+                state.state = .exercise;
             },
             else => {
                 state.state = .exercise_init;
