@@ -59,13 +59,13 @@ pub fn createAndInitExcercise(state: *State) void {
     var word_count: u8 = 0;
     var processed: u64 = 0;
     lbl: while (word_count < state.exercise_len and processed < state.symbol_stats.items.len) {
-        var stat = &state.symbol_stats.items[processed];
+        const stat = &state.symbol_stats.items[processed];
         const smb = stat.smb;
         for (storage.items) |word| {
             var j: u8 = 0;
             while (j + smb.len <= word.len) {
                 if (std.mem.eql(u8, word[j .. j + smb.len], smb) and !hasWord(words.items, word)) {
-                    stat.n_error -= @divFloor(stat.n_error, 2);
+                    // stat.n_error -= @divFloor(stat.n_error, 5) + if (@mod(stat.n_error, 5) == 0) 0 else 1;
                     word_count += 1;
                     processed += 1;
                     words.append(word) catch unreachable;
