@@ -2,7 +2,6 @@ const std = @import("std");
 const assert = std.debug.assert;
 const cnst = @import("constants.zig");
 const TypedState = @import("common_enums.zig").TypedState;
-const word_storage = @import("word_storage.zig");
 const unicode = std.unicode;
 
 var exer_buff_arr: [cnst.max_characters_test * 8]u8 = undefined;
@@ -55,24 +54,10 @@ pub const State = struct {
             .typed_symbols = std.ArrayList(TypedSymbol).init(typed_arena.allocator()),
             .symbol_stats = std.ArrayList(SymbolStat).init(symbol_stats_allocator),
         };
-        // for (word_storage.symbols.items) |s| {
-        //     const len = std.unicode.utf8CodepointSequenceLength(s) catch unreachable;
-        //     var smb = symbol_stats_allocator.allocSentinel(u8, len, 0) catch unreachable;
-        //     const n = std.unicode.utf8Encode(s, smb[0..]) catch unreachable;
-        //     std.debug.assert(len == n);
-        //     const ss = SymbolStat{
-        //         .smb = smb,
-        //         .n = 0,
-        //         .n_time = 0,
-        //         .n_error = 0,
-        //         .sum_time = null,
-        //     };
-        //     res.symbol_stats.append(ss) catch unreachable;
-        // }
         // return res;
     }
 
-    pub fn init_exercise(self: *State, words: []const []const u8) void {
+    pub fn init_exercise(self: *State, words: []const []const u8, symbols: []const u21) void {
         std.debug.assert(self.state == .exercise_init);
 
         self.resetTyped();
@@ -90,6 +75,29 @@ pub const State = struct {
                 i += @intCast(len);
             }
         }
+
+        next: for (symbols) |s| {
+            const len = std.unicode.utf8CodepointSequenceLength(s) catch unreachable;
+            var smb = symbol_stats_allocator.allocSentinel(u8, len, 0) catch unreachable;
+            const n = std.unicode.utf8Encode(s, smb[0..]) catch unreachable;
+            std.debug.assert(len == n);
+            for (self.symbol_stats.items) |ss| {
+                if (ss.smb.len == n and std.mem.eql(u8, ss.smb, smb)) {
+                    symbol_stats_allocator.free(smb);
+                    continue :next;
+                }
+            }
+            const ss = SymbolStat{
+                .smb = smb,
+                .n = 0,
+                .n_time = 0,
+                .n_error = 0,
+                .sum_time = null,
+            };
+            self.symbol_stats.append(ss) catch unreachable;
+        }
+
+        self.sortStats();
 
         self.state = .exercise;
     }

@@ -83,7 +83,7 @@ pub fn createAndInitExcercise(state: *State) void {
         }
     }
 
-    state.init_exercise(words.items);
+    state.init_exercise(words.items, symbols.items);
 }
 
 fn hasWord(list: []const []const u8, word: []const u8) bool {
