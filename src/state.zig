@@ -237,11 +237,11 @@ fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
         if (lhs.sum_time == null and rhs.sum_time == null) return false;
         if (lhs.sum_time) |l_time|
             if (rhs.sum_time) |r_time| {
-                if (l1smb and r1smb)
-                    std.debug.print(
-                        "Comparing {s} and {s}: l_time {d} rtime {d}\n",
-                        .{ lhs.smb, rhs.smb, l_time * rhs.n_time, r_time * lhs.n_time },
-                    );
+                // if (l1smb and r1smb)
+                //     std.debug.print(
+                //         "Comparing {s} and {s}: l_time {d} rtime {d}\n",
+                //         .{ lhs.smb, rhs.smb, l_time * rhs.n_time, r_time * lhs.n_time },
+                //     );
                 return l_time * rhs.n_time > r_time * lhs.n_time;
             } else return false
         else
