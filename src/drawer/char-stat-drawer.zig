@@ -57,7 +57,7 @@ pub const CharStatDrawer = struct {
             const er_color = getMixedColor(err, 90, 95, 100, cnst.red_color, cnst.yellow_color, cnst.green_color);
             const text1 = std.fmt.allocPrintZ(
                 ch_buffer.allocator(),
-                "{d:.2}%",
+                "{d:.1}%",
                 .{err},
             ) catch unreachable;
             rl.drawTextEx(self.small_font, text1, point.add(.{ .x = 0, .y = font_size + 1 }), small_font_size, 1, er_color);

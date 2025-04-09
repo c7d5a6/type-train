@@ -232,8 +232,8 @@ fn fillSymbolStat(stat: *SymbolStat, ts: TypedSymbol) void {
 
 fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
     _ = v;
-    const e1n2 = lhs.n_error * rhs.n;
-    const e2n1 = rhs.n_error * lhs.n;
+    const el: u64 = if (lhs.n == 0) 0 else @divFloor((lhs.n_error * 1000), lhs.n);
+    const er: u64 = if (rhs.n == 0) 0 else @divFloor((rhs.n_error * 1000), rhs.n);
     const l1smb = std.unicode.utf8ByteSequenceLength(lhs.smb[0]) catch unreachable == lhs.smb.len;
     const r1smb = std.unicode.utf8ByteSequenceLength(lhs.smb[0]) catch unreachable == rhs.smb.len;
     if ((l1smb and lhs.n < 3) or
@@ -241,7 +241,7 @@ fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
     {
         return lhs.n < rhs.n;
     }
-    if (e1n2 == e2n1) {
+    if (el == er) {
         if (lhs.sum_time == null and rhs.sum_time == null) return false;
         if (lhs.sum_time) |l_time|
             if (rhs.sum_time) |r_time| {
@@ -255,5 +255,5 @@ fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
         else
             return true;
     }
-    return e1n2 > e2n1;
+    return el > er;
 }
