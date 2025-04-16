@@ -55,8 +55,6 @@ pub fn load() void {
         }
     }
     std.debug.print("symbols {any}\n", .{symbols.items});
-    var r = std.Random.DefaultPrng.init(@intCast(std.time.microTimestamp()));
-    r.random().shuffle(StorWord, storage.items);
 }
 
 pub fn createAndInitExcercise(state: *State) void {
@@ -64,6 +62,8 @@ pub fn createAndInitExcercise(state: *State) void {
     var words: std.ArrayList([]u8) = std.ArrayList([]u8).init(temp_arena.allocator());
 
     calculateScore(storage.items, state.*);
+    var r = std.Random.DefaultPrng.init(@intCast(std.time.microTimestamp()));
+    r.random().shuffle(StorWord, storage.items);
     std.mem.sort(StorWord, storage.items, .{}, lessThanSW);
     std.debug.print("Top 10 sorted words with score\n", .{});
     for (storage.items, 0..) |sw, i| {
