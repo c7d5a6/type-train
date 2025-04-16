@@ -1,7 +1,10 @@
 const std = @import("std");
 const file = @import("file-reader.zig");
 const State = @import("state.zig").State;
+const SymbolStat = @import("state.zig").SymbolStat;
 const cnst = @import("constants.zig");
+const isLenOneUtf8 = @import("utils.zig").isLenOneUtf8;
+const has = @import("utils.zig").has;
 
 var temp_da = std.heap.DebugAllocator(.{}).init;
 var temp_arena = std.heap.ArenaAllocator.init(temp_da.allocator());
@@ -34,13 +37,13 @@ pub fn load() void {
             while (i < word.len) {
                 const n = std.unicode.utf8ByteSequenceLength(word[i]) catch unreachable;
                 const c = std.unicode.utf8Decode(word[i .. i + n]) catch unreachable;
-                const has = has: {
+                const hasSmb = hasSmb: {
                     for (symbols.items) |s| {
-                        if (s == c) break :has true;
+                        if (s == c) break :hasSmb true;
                     }
-                    break :has false;
+                    break :hasSmb false;
                 };
-                if (!has)
+                if (!hasSmb)
                     symbols.append(c) catch unreachable;
                 i += n;
             }
@@ -56,21 +59,45 @@ pub fn createAndInitExcercise(state: *State) void {
     var r = std.Random.DefaultPrng.init(@intCast(std.time.microTimestamp()));
     r.random().shuffle([]u8, storage.items);
 
+    var slow: ?SymbolStat = null;
+    for (state.symbol_stats.items) |stat| {
+        if (stat.sum_time == null) continue;
+        if (!isLenOneUtf8(stat.smb)) continue;
+        if (slow == null or slow.?.sum_time == null) {
+            slow = stat;
+            continue;
+        }
+        const stat_time = stat.sum_time.?;
+        const stat_ntime = stat.n_time;
+        const sl_time = slow.?.sum_time.?;
+        const sl_ntime = slow.?.n_time;
+        if (stat_time * sl_ntime > sl_time * stat_ntime) {
+            slow = stat;
+        }
+    }
+    std.debug.print("Slow item is {s}:{?}", .{ if (slow == null) "-" else slow.?.smb, slow });
+
     var word_count: u8 = 0;
     var processed: u64 = 0;
     lbl: while (word_count < state.exercise_len and processed < state.symbol_stats.items.len) {
         const stat = &state.symbol_stats.items[processed];
         const smb = stat.smb;
-        for (storage.items) |word| {
-            var j: u8 = 0;
-            while (j + smb.len <= word.len) {
-                if (std.mem.eql(u8, word[j .. j + smb.len], smb) and !hasWord(words.items, word)) {
-                    // stat.n_error -= @divFloor(stat.n_error, 5) + if (@mod(stat.n_error, 5) == 0) 0 else 1;
+        if (slow) |sl| {
+            for (storage.items) |word| {
+                if (has(word, sl.smb) and has(word, smb) and !hasWord(words.items, word)) {
                     word_count += 1;
                     processed += 1;
                     words.append(word) catch unreachable;
                     continue :lbl;
-                } else j += 1;
+                }
+            }
+        }
+        for (storage.items) |word| {
+            if (has(word, smb) and !hasWord(words.items, word)) {
+                word_count += 1;
+                processed += 1;
+                words.append(word) catch unreachable;
+                continue :lbl;
             }
         }
         processed += 1;

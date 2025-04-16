@@ -26,7 +26,7 @@ const TypedSymbol = struct {
     err: bool,
 };
 
-const SymbolStat = struct {
+pub const SymbolStat = struct {
     smb: [:0]u8,
     sum_time: ?i128,
     n_time: u32,
@@ -232,8 +232,8 @@ fn fillSymbolStat(stat: *SymbolStat, ts: TypedSymbol) void {
 
 fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
     _ = v;
-    const el: u64 = if (lhs.n == 0) 0 else @divFloor((lhs.n_error * 1000), lhs.n);
-    const er: u64 = if (rhs.n == 0) 0 else @divFloor((rhs.n_error * 1000), rhs.n);
+    const el: u64 = if (lhs.n == 0) 0 else @divFloor((lhs.n_error * 100), lhs.n);
+    const er: u64 = if (rhs.n == 0) 0 else @divFloor((rhs.n_error * 100), rhs.n);
     const l1smb = std.unicode.utf8ByteSequenceLength(lhs.smb[0]) catch unreachable == lhs.smb.len;
     const r1smb = std.unicode.utf8ByteSequenceLength(lhs.smb[0]) catch unreachable == rhs.smb.len;
     if ((l1smb and lhs.n < 3) or
@@ -245,11 +245,6 @@ fn smbStLessThan(v: @TypeOf(.{}), lhs: SymbolStat, rhs: SymbolStat) bool {
         if (lhs.sum_time == null and rhs.sum_time == null) return false;
         if (lhs.sum_time) |l_time|
             if (rhs.sum_time) |r_time| {
-                // if (l1smb and r1smb)
-                //     std.debug.print(
-                //         "Comparing {s} and {s}: l_time {d} rtime {d}\n",
-                //         .{ lhs.smb, rhs.smb, l_time * rhs.n_time, r_time * lhs.n_time },
-                //     );
                 return l_time * rhs.n_time > r_time * lhs.n_time;
             } else return false
         else
