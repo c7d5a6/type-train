@@ -54,7 +54,13 @@ pub fn load() void {
             }
         }
     }
-    std.debug.print("symbols {any}\n", .{symbols.items});
+    std.debug.print("Symbols:\n", .{});
+    for (symbols.items, 0..) |s, i| {
+        var str = symbol_all.allocator().alloc(u8, 4) catch unreachable;
+        defer symbol_all.allocator().free(str);
+        _ = std.unicode.utf8Encode(s, str[0..]) catch unreachable;
+        std.debug.print("\t{d}. {s}\n", .{ i, str });
+    }
 }
 
 pub fn createAndInitExcercise(state: *State) void {
