@@ -34,7 +34,7 @@ pub const CharStatDrawer = struct {
         };
     }
 
-    pub fn drawText(self: This) void {
+    pub fn drawText(self: This) rl.Vector2 {
         const box_size = (self.ch_size.x * 10);
         const text_width = @min(rl.getRenderWidth() - self.text_margin * 2, 900);
         const max_width: f32 = @as(f32, @floatFromInt(text_width)) / box_size;
@@ -97,6 +97,8 @@ pub const CharStatDrawer = struct {
                 symbol = 0;
             }
         }
+        if (symbol != 0) line += 1;
+        return start.add(.{ .x = 0, .y = (font_size + 2 * small_font_size + 3) * line });
     }
 };
 

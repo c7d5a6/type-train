@@ -34,15 +34,16 @@ pub const TextDrawer = struct {
     }
 
     pub fn drawText(self: This) void {
-        self.char_drawer.drawText();
+        const char_end = self.char_drawer.drawText();
 
         const text_width = @min(rl.getRenderWidth() - text_margin * 2, 900);
         const max_width: f32 = @as(f32, @floatFromInt(text_width)) / self.ch_size.x - 8;
-        const start = rl.Vector2{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 200 };
+        const point: rl.Vector2 = .{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = @max(200, char_end.y + 70) };
+        const start = point;
 
         ch_buffer.reset();
         const time = std.fmt.allocPrintZ(ch_buffer.allocator(), "cpm: {d}", .{self.state.cpm}) catch unreachable;
-        rl.drawTextEx(self.font, time, .{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = 150 }, font_size, 1, cnst.accent_color);
+        rl.drawTextEx(self.font, time, point.add(.{ .x = 0, .y = -50 }), font_size, 1, cnst.accent_color);
         //
 
         const state = self.state;
