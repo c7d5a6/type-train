@@ -1,31 +1,43 @@
 const std = @import("std");
 
-const en_path = "resources/word/en";
+const en_path = "resources/word/test";
 const initial_capacity = 1000 * 1000;
 const Words = std.ArrayList([]const u8);
 
 pub fn readEn(a: std.mem.Allocator) Words {
     var result = Words.initCapacity(a, initial_capacity) catch unreachable;
-    var dir = std.fs.cwd().openDir(
+    const dir = std.fs.cwd().openDir(
         en_path,
         .{
-            .access_sub_paths = false, // default is true
+            // .access_sub_paths = false, // default is true
             .iterate = true,
         },
     ) catch unreachable;
+    readDir(a, dir, &result);
+    return result;
+}
+
+fn readDir(a: std.mem.Allocator, dir: std.fs.Dir, words: *Words) void {
     var it = dir.iterate();
     while (it.next() catch unreachable) |entry| {
-        if (entry.kind == .file and entry.kind != .directory) {
-            std.debug.print("File Name: {s}\n", .{entry.name});
-            var file = dir.openFile(entry.name, .{ .mode = .read_only }) catch unreachable;
-            const stats = file.stat() catch unreachable;
-            var file_buff = a.alloc(u8, stats.size) catch unreachable;
-            const n = file.readAll(file_buff[0..]) catch unreachable;
-            std.debug.assert(n == stats.size);
-            addWords(&result, file_buff);
+        switch (entry.kind) {
+            .file => {
+                std.debug.print("File Name: {s}\n", .{entry.name});
+                var file = dir.openFile(entry.name, .{ .mode = .read_only }) catch unreachable;
+                const stats = file.stat() catch unreachable;
+                var file_buff = a.alloc(u8, stats.size) catch unreachable;
+                const n = file.readAll(file_buff[0..]) catch unreachable;
+                std.debug.assert(n == stats.size);
+                addWords(words, file_buff);
+            },
+            .directory => {
+                const next_dir = dir.openDir(entry.name, .{ .iterate = true }) catch unreachable;
+                readDir(a, next_dir, words);
+            },
+            else => {},
         }
+        if (entry.kind == .file and entry.kind != .directory) {}
     }
-    return result;
 }
 
 fn addWords(arr: *Words, text: []const u8) void {

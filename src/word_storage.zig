@@ -6,14 +6,16 @@ const cnst = @import("constants.zig");
 const isLenOneUtf8 = @import("utils.zig").isLenOneUtf8;
 const has = @import("utils.zig").has;
 
-var temp_da = std.heap.DebugAllocator(.{}).init;
-var temp_arena = std.heap.ArenaAllocator.init(temp_da.allocator());
+// var temp_da = std.heap.DebugAllocator(.{}).init;
+const temp_da = std.heap.c_allocator;
+var temp_arena = std.heap.ArenaAllocator.init(temp_da);
 
-var word_da = std.heap.DebugAllocator(.{}).init;
-var word_arena = std.heap.ArenaAllocator.init(word_da.allocator());
+const word_da = std.heap.c_allocator;
+var word_arena = std.heap.ArenaAllocator.init(word_da);
 
-var storage_da = std.heap.DebugAllocator(.{}).init;
-var storage: std.ArrayList(StorWord) = std.ArrayList(StorWord).init(storage_da.allocator());
+// var storage_da = std.heap.DebugAllocator(.{}).init;
+const storage_da = std.heap.c_allocator;
+var storage: std.ArrayList(StorWord) = std.ArrayList(StorWord).init(storage_da);
 
 var symbol_buff: [cnst.char_len * 3]u8 = undefined;
 var symbol_all = std.heap.FixedBufferAllocator.init(&symbol_buff);
@@ -34,9 +36,9 @@ pub fn load() void {
 
     const file_words = file.readEn(temp_arena.allocator());
     for (file_words.items) |w| {
-        var word = word_arena.allocator().alloc(u8, w.len) catch unreachable;
-        @memcpy(word[0..], w);
-        if (!hasStorWord(storage.items, word)) {
+        if (!hasStorWord(storage.items, w)) {
+            var word = word_arena.allocator().alloc(u8, w.len) catch unreachable;
+            @memcpy(word[0..], w);
             storage.append(.{ .word = word[0..] }) catch unreachable;
             var i: u32 = 0;
             while (i < word.len) {
@@ -64,13 +66,17 @@ pub fn load() void {
 }
 
 pub fn createAndInitExcercise(state: *State) void {
+    const time = std.time.milliTimestamp();
     defer _ = temp_arena.reset(.free_all);
     var words: std.ArrayList([]u8) = std.ArrayList([]u8).init(temp_arena.allocator());
 
     calculateScore(storage.items, state.*);
+    std.debug.print("\t calculate score: {d}\n", .{std.time.milliTimestamp() - time});
     var r = std.Random.DefaultPrng.init(@intCast(std.time.microTimestamp()));
     r.random().shuffle(StorWord, storage.items);
+    std.debug.print("\t shuffle: {d}\n", .{std.time.milliTimestamp() - time});
     std.mem.sort(StorWord, storage.items, .{}, lessThanSW);
+    std.debug.print("\t sort: {d}\n", .{std.time.milliTimestamp() - time});
     std.debug.print("Top 10 sorted words with score\n", .{});
     for (storage.items, 0..) |sw, i| {
         if (i > 10) break;
@@ -79,6 +85,8 @@ pub fn createAndInitExcercise(state: *State) void {
             std.debug.print("\t{d}: {s} in {d}\n", .{ i, sw.word, c });
         }
     }
+    const time_post = std.time.milliTimestamp();
+    std.debug.print("time 1: {d}\n", .{time_post - time});
 
     // var r = std.Random.DefaultPrng.init(@intCast(std.time.microTimestamp()));
     // r.random().shuffle(StorWord, storage.items);
@@ -138,6 +146,8 @@ pub fn createAndInitExcercise(state: *State) void {
     }
 
     state.init_exercise(words.items, symbols.items);
+
+    std.debug.print("time 2: {d}\n", .{std.time.milliTimestamp() - time_post});
 }
 
 fn lessThanSW(v: @TypeOf(.{}), l: StorWord, r: StorWord) bool {
