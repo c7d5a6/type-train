@@ -64,7 +64,7 @@ pub const State = struct {
         self.exercise.clearRetainingCapacity();
 
         for (words, 0..) |word, iw| {
-            var i: u8 = 0;
+            var i: u32 = 0;
             if (iw != 0)
                 self.exercise.append(' ') catch unreachable;
             while (i < word.len) {

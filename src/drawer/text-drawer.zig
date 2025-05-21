@@ -52,8 +52,8 @@ pub const TextDrawer = struct {
 
         var line: f32 = 0;
         var symbol: f32 = 0;
-        var ie: u8 = 0;
-        var it: u8 = 0;
+        var ie: u32 = 0;
+        var it: u32 = 0;
         var drawn = false;
         var prev_ch: u21 = 0;
         while (exercise.len > ie or typed.len > it) {

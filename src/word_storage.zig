@@ -17,7 +17,7 @@ var word_arena = std.heap.ArenaAllocator.init(word_da);
 const storage_da = std.heap.c_allocator;
 var storage: std.ArrayList(StorWord) = std.ArrayList(StorWord).init(storage_da);
 
-var symbol_buff: [cnst.char_len * 3]u8 = undefined;
+var symbol_buff: [cnst.char_len * 1000]u8 = undefined;
 var symbol_all = std.heap.FixedBufferAllocator.init(&symbol_buff);
 pub var symbols = std.ArrayList(u21).init(symbol_all.allocator());
 
@@ -27,6 +27,7 @@ const StorWord = struct {
 };
 
 pub fn load() void {
+    std.debug.print("LOAD WORDS:...\n", .{});
     defer _ = temp_arena.reset(.free_all);
     _ = word_arena.reset(.retain_capacity);
     _ = word_arena.allocator().alloc(u21, 50 * 1000 * 25 * 4) catch unreachable;
@@ -35,15 +36,55 @@ pub fn load() void {
     storage.clearRetainingCapacity();
 
     const file_words = file.readEn(temp_arena.allocator());
-    for (file_words.items) |w| {
+    std.debug.print("LOAD storage:...file_word[{d}]\n", .{file_words.items.len});
+    nword: for (file_words.items) |w| {
         if (!hasStorWord(storage.items, w)) {
-            var word = word_arena.allocator().alloc(u8, w.len) catch unreachable;
-            @memcpy(word[0..], w);
-            storage.append(.{ .word = word[0..] }) catch unreachable;
             var i: u32 = 0;
-            while (i < word.len) {
-                const n = std.unicode.utf8ByteSequenceLength(word[i]) catch unreachable;
-                const c = std.unicode.utf8Decode(word[i .. i + n]) catch unreachable;
+            while (i < w.len) {
+                const n = std.unicode.utf8ByteSequenceLength(w[i]) catch {
+                    std.debug.print("exception for w[i]: {s}[{d}]\n", .{ w[i .. i + 1], w[i] });
+                    std.debug.print("for word {s}", .{w});
+                    return;
+                };
+                var c: u21 = @intCast(w[i]);
+                if (i + n <= w.len and std.unicode.utf8ValidateSlice(w[i .. i + n])) {
+                    c = std.unicode.utf8Decode(w[i .. i + n]) catch unreachable;
+                }
+                switch (c) {
+                    8208,
+                    9889,
+                    128034,
+                    228,
+                    177,
+                    960,
+                    934,
+                    964,
+                    9500,
+                    9472,
+                    9474,
+                    9492,
+                    9658,
+                    9829,
+                    246,
+                    223,
+                    8722,
+                    8971,
+                    8712,
+                    8805,
+                    8804,
+                    8730,
+                    8211,
+                    261,
+                    8217,
+                    8658,
+                    181,
+                    923,
+                    592,
+                    955,
+                    11375,
+                    => continue :nword,
+                    else => {},
+                }
                 const hasSmb = hasSmb: {
                     for (symbols.items) |s| {
                         if (s == c) break :hasSmb true;
@@ -54,14 +95,20 @@ pub fn load() void {
                     symbols.append(c) catch unreachable;
                 i += n;
             }
+            var word = word_arena.allocator().alloc(u8, w.len) catch unreachable;
+            @memcpy(word[0..], w);
+            storage.append(.{ .word = word[0..] }) catch unreachable;
         }
     }
+    std.debug.print("word number: {d}/{d}\n", .{ storage.items.len, file_words.items.len });
     std.debug.print("Symbols:\n", .{});
     for (symbols.items, 0..) |s, i| {
         var str = symbol_all.allocator().alloc(u8, 4) catch unreachable;
         defer symbol_all.allocator().free(str);
+        const n = std.unicode.utf8CodepointSequenceLength(s) catch unreachable;
         _ = std.unicode.utf8Encode(s, str[0..]) catch unreachable;
-        std.debug.print("\t{d}. {s}\n", .{ i, str });
+        const arr = str[0..n];
+        std.debug.print("\t{d}. {s} {d}[{any}]\n", .{ i, str, s, arr });
     }
 }
 
