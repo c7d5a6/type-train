@@ -2,7 +2,7 @@ const std = @import("std");
 
 const en_path = "resources/word/zig";
 const initial_capacity = 1000 * 1000;
-const Words = std.ArrayList([]const u8);
+const Words = std.array_list.Managed([]const u8);
 
 pub fn readEn(a: std.mem.Allocator) Words {
     var result = Words.initCapacity(a, initial_capacity) catch unreachable;

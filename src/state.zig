@@ -37,22 +37,22 @@ pub const SymbolStat = struct {
 pub const State = struct {
     state: StateType = .exercise_init,
     exercise_len: u8 = 10,
-    exercise: std.ArrayList(u21),
-    typed: std.ArrayList(u21),
+    exercise: std.array_list.Managed(u21),
+    typed: std.array_list.Managed(u21),
     ex_id: ?u8 = null,
     key_time: ?i128 = null,
     prev_key_time: ?i128 = null,
-    typed_symbols: std.ArrayList(TypedSymbol),
-    symbol_stats: std.ArrayList(SymbolStat),
+    typed_symbols: std.array_list.Managed(TypedSymbol),
+    symbol_stats: std.array_list.Managed(SymbolStat),
     cpm: u64 = 0,
 
     pub fn init(state: StateType) State {
         return State{
             .state = state,
-            .exercise = std.ArrayList(u21).initCapacity(exer_buff.allocator(), cnst.max_characters_test) catch unreachable,
-            .typed = std.ArrayList(u21).initCapacity(typed_buff.allocator(), cnst.max_characters_test) catch unreachable,
-            .typed_symbols = std.ArrayList(TypedSymbol).init(typed_arena.allocator()),
-            .symbol_stats = std.ArrayList(SymbolStat).init(symbol_stats_allocator),
+            .exercise = std.array_list.Managed(u21).initCapacity(exer_buff.allocator(), cnst.max_characters_test) catch unreachable,
+            .typed = std.array_list.Managed(u21).initCapacity(typed_buff.allocator(), cnst.max_characters_test) catch unreachable,
+            .typed_symbols = std.array_list.Managed(TypedSymbol).init(typed_arena.allocator()),
+            .symbol_stats = std.array_list.Managed(SymbolStat).init(symbol_stats_allocator),
         };
         // return res;
     }
@@ -106,7 +106,7 @@ pub const State = struct {
         _ = self.typed.clearRetainingCapacity();
         self.ex_id = null;
         _ = typed_arena.reset(.retain_capacity);
-        self.typed_symbols = std.ArrayList(TypedSymbol).init(typed_arena.allocator());
+        self.typed_symbols = std.array_list.Managed(TypedSymbol).init(typed_arena.allocator());
     }
 
     pub fn addTyped(self: *State, ts: TypedState, key_time: ?i128) void {
@@ -158,7 +158,7 @@ pub const State = struct {
     fn addTypedSymbols(self: *State, symbols: []const u21, time: ?i128, is_error: bool) void {
         assert(self.state == .exercise);
         const a = typed_arena.allocator();
-        var str = std.ArrayList(u8).initCapacity(a, 4 * 3) catch unreachable;
+        var str = std.array_list.Managed(u8).initCapacity(a, 4 * 3) catch unreachable;
         var buff: [4]u8 = undefined;
         for (symbols) |s| {
             const n = unicode.utf8Encode(s, buff[0..]) catch unreachable;

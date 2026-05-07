@@ -49,20 +49,20 @@ pub const CharStatDrawer = struct {
             const point = start.add(.{ .x = box_size * symbol, .y = (font_size + 2 * small_font_size + 3) * line });
             rl.drawTextEx(self.font, stat.smb, point, font_size, 1, cnst.accent_color);
 
-            ch_buffer.reset();
+            var text1_buf: [32]u8 = undefined;
             const err: f32 = if (stat.n != 0)
                 100 - @as(f32, @floatFromInt(stat.n_error * 100)) / @as(f32, @floatFromInt(stat.n))
             else
                 0;
             const er_color = getMixedColor(err, 90, 95, 100, cnst.red_color, cnst.yellow_color, cnst.green_color);
-            const text1 = std.fmt.allocPrintZ(
-                ch_buffer.allocator(),
+            const text1 = std.fmt.bufPrintZ(
+                &text1_buf,
                 "{d:.1}%",
                 .{err},
             ) catch unreachable;
             rl.drawTextEx(self.small_font, text1, point.add(.{ .x = 0, .y = font_size + 1 }), small_font_size, 1, er_color);
 
-            ch_buffer.reset();
+            var text2_buf: [32]u8 = undefined;
             const cpm = cpm: {
                 if (stat.sum_time == null or stat.sum_time.? == 0) break :cpm null;
                 const cpm: i128 = @intCast(@divFloor(60 * 1000 * 1000 * 1000 * @as(i128, stat.n_time), stat.sum_time.?));
@@ -83,8 +83,8 @@ pub const CharStatDrawer = struct {
                 cnst.dark_red_color;
             const text2 = t: {
                 if (cpm == null) break :t "none";
-                break :t std.fmt.allocPrintZ(
-                    ch_buffer.allocator(),
+                break :t std.fmt.bufPrintZ(
+                    &text2_buf,
                     "cpm {d}",
                     .{cpm.?},
                 ) catch unreachable;

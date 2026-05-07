@@ -41,8 +41,8 @@ pub const TextDrawer = struct {
         const point: rl.Vector2 = .{ .x = @as(f32, @floatFromInt(rl.getRenderWidth() - text_width)) / 2, .y = @max(200, char_end.y + 70) };
         const start = point;
 
-        ch_buffer.reset();
-        const time = std.fmt.allocPrintZ(ch_buffer.allocator(), "cpm: {d}", .{self.state.cpm}) catch unreachable;
+        var time_buf: [32]u8 = undefined;
+        const time = std.fmt.bufPrintZ(&time_buf, "cpm: {d}", .{self.state.cpm}) catch unreachable;
         rl.drawTextEx(self.font, time, point.add(.{ .x = 0, .y = -50 }), font_size, 1, cnst.accent_color);
         //
 

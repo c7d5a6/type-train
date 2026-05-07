@@ -40,8 +40,8 @@ pub const StatDrawer = struct {
             @memcpy(str[(3 - st.smb.len)..3], st.smb);
             const e: u64 = if (st.n == 0) 0 else @divFloor((st.n_error * 1000), st.n);
             const f: f64 = @floatFromInt(e / 10);
-            str_buff.reset();
-            const st_text = std.fmt.allocPrintZ(str_buff.allocator(), "{s}: cpm {d} with {d:.1} correctness", .{
+            var st_text_buf: [128]u8 = undefined;
+            const st_text = std.fmt.bufPrintZ(&st_text_buf, "{s}: cpm {d} with {d:.1} correctness", .{
                 str,
                 if (st.sum_time) |time|
                     @divFloor(60 * 1000 * 1000 * 1000 * @as(i128, st.n_time), time)

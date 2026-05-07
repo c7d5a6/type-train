@@ -15,11 +15,11 @@ var word_arena = std.heap.ArenaAllocator.init(word_da);
 
 // var storage_da = std.heap.DebugAllocator(.{}).init;
 const storage_da = std.heap.c_allocator;
-var storage: std.ArrayList(StorWord) = std.ArrayList(StorWord).init(storage_da);
+var storage: std.array_list.Managed(StorWord) = std.array_list.Managed(StorWord).init(storage_da);
 
 var symbol_buff: [cnst.char_len * 1000]u8 = undefined;
 var symbol_all = std.heap.FixedBufferAllocator.init(&symbol_buff);
-pub var symbols = std.ArrayList(u21).init(symbol_all.allocator());
+pub var symbols = std.array_list.Managed(u21).init(symbol_all.allocator());
 
 const StorWord = struct {
     word: []u8,
@@ -115,7 +115,7 @@ pub fn load() void {
 pub fn createAndInitExcercise(state: *State) void {
     const time = std.time.milliTimestamp();
     defer _ = temp_arena.reset(.free_all);
-    var words: std.ArrayList([]u8) = std.ArrayList([]u8).init(temp_arena.allocator());
+    var words: std.array_list.Managed([]u8) = std.array_list.Managed([]u8).init(temp_arena.allocator());
 
     calculateScore(storage.items, state.*);
     std.debug.print("\t calculate score: {d}\n", .{std.time.milliTimestamp() - time});
